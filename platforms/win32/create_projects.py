@@ -50,10 +50,13 @@ def print_file(out, files, name, root, keys):
         if "assemble" in values:
             _p, _e = path.splitext(p)
             if _e == ".pl":
-                settings.append("<Command>perl &quot;%s&quot; win32 &gt; &quot;%s.asm&quot;</Command>" % (p, _p))
+                settings.append("<Command Condition=\"'$(Platform)'=='Win32'\">perl &quot;%s&quot; win32 &gt; &quot;%s.asm&quot;</Command>" % (p, _p))
+                settings.append("<Command Condition=\"'$(Platform)'=='x64'\">set ASM=ml64 /c /Cp /Cx /Zi\nperl &quot;%s&quot; masm &quot;%s.asm&quot;</Command>" % (p, _p))
                 settings.append("<Outputs>%s.asm</Outputs>" % _p)
+                #ASM=ml64 /c /Cp /Cx /Zi
             if _e == ".asm":
-                settings.append("<Command>ml /nologo /Cp /coff /c /Cx /Zi &quot;/Fo$(IntDir)%s.obj&quot; &quot;%s&quot;</Command>" % (path.split(_p)[1], p))
+                settings.append("<Command Condition=\"'$(Platform)'=='Win32'\">ml /nologo /Cp /coff /c /Cx /Zi &quot;/Fo$(IntDir)%s.obj&quot; &quot;%s&quot;</Command>" % (path.split(_p)[1], p))
+                settings.append("<Command Condition=\"'$(Platform)'=='x64'\">ml64 /c /Cp /Cx /Zi &quot;/Fo$(IntDir)%s.obj&quot; &quot;%s&quot;</Command>" % (path.split(_p)[1], p))
                 settings.append("<Outputs>$(IntDir)%s.obj</Outputs>" % path.split(_p)[1])
 
         _p = p

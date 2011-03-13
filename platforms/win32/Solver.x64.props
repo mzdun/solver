@@ -5,6 +5,10 @@
   <PropertyGroup>
     <_PropertySheetDisplayName>Solver AMD64 settings</_PropertySheetDisplayName>
   </PropertyGroup>
-  <ItemDefinitionGroup />
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <PreprocessorDefinitions>OPENSSL_NO_ASM;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemGroup />
 </Project>
