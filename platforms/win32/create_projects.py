@@ -43,6 +43,7 @@ def print_file(out, files, name, root, keys):
 
 def print_filters(files, outname, root):
     if files.file_fresh(outname): return
+    print outname
     out = open(outname, "w")
     dirs = {}
     for f in files.sec.items:
@@ -82,8 +83,9 @@ def print_filters(files, outname, root):
     print_filter(out, files, "ClInclude", root, files.includes, "Header Files\\")
     print >>out, "</Project>"
 
-def print_project(files, outname, root, bintype, basename):
+def print_project(files, outname, root, bintype, basename, guid):
     if files.file_fresh(outname): return
+    print outname
     out = open(outname, "w")
     print >>out, """<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -132,7 +134,7 @@ def print_project(files, outname, root, bintype, basename):
     <Import Project="$(SolutionDir)\Solver.$(Configuration).props" Condition="exists('$(SolutionDir)\Solver.$(Configuration).props')" />
     <Import Project="$(SolutionDir)\Solver.$(Platform).$(Configuration).props" Condition="exists('$(SolutionDir)\Solver.$(Platform).$(Configuration).props')" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />""" % (uuid.uuid1(), basename, bintype, basename, basename)
+  <PropertyGroup Label="UserMacros" />""" % (guid, basename, bintype, basename, basename)
     print_file(out, files, "None", root, files.datafiles)
     print_file(out, files, "ClCompile", root, files.cfiles + files.cppfiles)
     print_file(out, files, "ClInclude", root, files.includes)
@@ -142,12 +144,12 @@ def print_project(files, outname, root, bintype, basename):
 </Project>"""
 
     
-def create_project(root, base, bintype):
+def create_project(root, base, bintype, guid):
     files = FileList()
     predef = Macros()
     predef.add_macro("WIN32", "", Location("<command-line>", 0))
     files.read(predef, "%splatforms/%s.files" % (root, base))
     print_filters(files, "%s.vcxproj.filters" % base, root)
-    print_project(files, "%s.vcxproj" % base, root, bintype, base)
+    print_project(files, "%s.vcxproj" % base, root, bintype, base, guid)
 
-create_project(sys.argv[1], sys.argv[2], sys.argv[3])
+create_project(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
