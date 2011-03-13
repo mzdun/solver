@@ -10,35 +10,85 @@ def print_filter(out, files, name, root, keys, base = ""):
     if len(keys) == 0: return
     print >>out, "  <ItemGroup>"
     for k in keys:
+        n = name
+        if "assemble" in files.sec.items[k].value.split(";"): n = "CustomBuild"
         p = files.sec.items[k].name
         f = "\\".join(path.split(p)[0].split("/"))
         f = "%s%s" % (base, f)
         p = "%s%s" % (root, p)
         p = "\\".join(p.split("/"))
         if f == "":
-            print >>out, """    <%s Include="%s" />""" % (name, p)
+            print >>out, """    <%s Include="%s" />""" % (n, p)
         else:
             print >>out, """    <%s Include="%s">
       <Filter>%s</Filter>
-    </%s>""" % (name, p, f, name)
+    </%s>""" % (n, p, f, n)
     print >>out, "  </ItemGroup>"
 
 def print_file(out, files, name, root, keys):
     if len(keys) == 0: return
     print >>out, "  <ItemGroup>"
     for k in keys:
+        n = name
+        values = files.sec.items[k].value.split(";")
+        vhash = {}
+        for v in values:
+            kk = v.split(":")
+            if len(kk) > 1:
+                if kk[0] in vhash.keys(): vhash[kk[0]].append(kk[1])
+                else: vhash[kk[0]] = [kk[1]]
+
+        if "assemble" in values: n = "CustomBuild"
         p = "%s%s" % (root, files.sec.items[k].name)
         p = "\\".join(p.split("/"))
-        if k in files.cfiles:
-            print >>out, """    <%s Include="%s">
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-    </%s>""" % (name, p, name)
-        elif k in files.cppfiles and "pch:1" in files.sec.items[k].value:
-            print >>out, """    <%s Include="%s">
-      <PrecompiledHeader>Create</PrecompiledHeader>
-    </%s>""" % (name, p, name)
+        settings = []
+        if k in files.cfiles or "pch:0" in values:
+            settings.append("<PrecompiledHeader>NotUsing</PrecompiledHeader>")
+        elif k in files.cppfiles and "pch:1" in values:
+            settings.append("<PrecompiledHeader>Create</PrecompiledHeader>")
+
+        if "assemble" in values:
+            _p, _e = path.splitext(p)
+            if _e == ".pl":
+                settings.append("<Command>perl &quot;%s&quot; win32 &gt; &quot;%s.asm&quot;</Command>" % (p, _p))
+                settings.append("<Outputs>%s.asm</Outputs>" % _p)
+            if _e == ".asm":
+                settings.append("<Command>ml /nologo /Cp /coff /c /Cx /Zi &quot;/Fo$(IntDir)%s.obj&quot; &quot;%s&quot;</Command>" % (path.split(_p)[1], p))
+                settings.append("<Outputs>$(IntDir)%s.obj</Outputs>" % path.split(_p)[1])
+
+        _p = p
+        if "exclude" in vhash.keys():
+            mask = 0
+            for b in vhash["exclude"]:
+                c, p = b.split("|")
+                if c == "*": mask = mask | 0x3
+                if p == "*": mask = mask | 0x30
+
+                if c == "Debug": mask = mask | 0x1
+                if c == "Release": mask = mask | 0x2
+                if p == "Win32": mask = mask | 0x10
+                if p == "x64": mask = mask | 0x20
+            if mask == 0x33: settings.append("<ExcludedFromBuild>true</ExcludedFromBuild>")
+            elif mask & 0xF == 0x3:
+                if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Platform)'=='Win32'\">true</ExcludedFromBuild>")
+                if mask & 0xF0 == 0x20: settings.append("<ExcludedFromBuild Condition=\"'$(Platform)'=='x64'\">true</ExcludedFromBuild>")
+            elif mask & 0xF0 == 0x30:
+                if mask & 0xF == 0x1: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)'=='Debug'\">true</ExcludedFromBuild>")
+                if mask & 0xF == 0x2: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)'=='Release'\">true</ExcludedFromBuild>")
+            else:
+                if mask & 0xF == 0x1:
+                    if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">true</ExcludedFromBuild>")
+                    if mask & 0xF0 == 0x20: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Debug|x64'\">true</ExcludedFromBuild>")
+                if mask & 0xF == 0x2:
+                    if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">true</ExcludedFromBuild>")
+                    if mask & 0xF0 == 0x20: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">true</ExcludedFromBuild>")
+        p = _p
+
+        if len(settings) == 0: print >>out, """    <%s Include="%s" />""" % (n, p)
         else:
-            print >>out, """    <%s Include="%s" />""" % (name, p)
+            print >>out, """    <%s Include="%s">""" % (n, p)
+            for s in settings: print >>out, """      %s""" % s
+            print >>out, """    </%s>""" % n
     print >>out, "  </ItemGroup>"
 
 def print_filters(files, outname, root):
@@ -149,6 +199,19 @@ def create_project(root, base, bintype, guid):
     predef = Macros()
     predef.add_macro("WIN32", "", Location("<command-line>", 0))
     files.read(predef, "%splatforms/%s.files" % (root, base))
+    tmp = []
+    for k in files.datafiles:
+        f = files.sec.items[k]
+        if "assemble" not in f.value.split(";"): continue
+        tmp.append(k)
+        files.cppfiles.append(k)
+        _p, ext = path.splitext(f.name)
+        if ext.lower() == ".asm": continue
+        _p += ".asm"
+        files.sec.append(Field(f, _p, f.value))
+        files.cppfiles.append(_p.lower())
+    for k in tmp: files.datafiles.remove(k)
+
     print_filters(files, "%s.vcxproj.filters" % base, root)
     print_project(files, "%s.vcxproj" % base, root, bintype, base, guid)
 
