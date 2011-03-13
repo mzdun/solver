@@ -31,6 +31,7 @@ class FileList:
         self.sec = None
 
     def read(self, predefs, fname, loc = None, ignoreIO = False):
+        self.inputs = [fname]
         macros = Macros()
         for k in predefs.macros: macros.macros[k] = predefs.macros[k]
         macros.add_macro("__configfile__", "3", Location("<predefined>", 0))
@@ -79,6 +80,17 @@ class FileList:
             pass
 
         del _macros
+    def file_fresh(self, output_filename):
+        try:
+            to = os.path.getmtime(output_filename)
+            for i in self.inputs:
+                if os.path.getmtime(i) > to: return False
+            return True #no update needed
+        except:
+            #some access was broken - huge chance,
+            #it's because output desn't exsits yet
+            return False
+
     def print_list(self, name, keys):
         print name
         for k in keys:

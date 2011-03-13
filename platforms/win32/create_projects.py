@@ -1,7 +1,9 @@
+import sys
+sys.path.append("../solver")
 from os import path
 from IniReader import *
 from xml.dom import minidom
-import sys, uuid
+import uuid
 from files import FileList
 
 def print_filter(out, files, name, root, keys, base = ""):
@@ -40,6 +42,7 @@ def print_file(out, files, name, root, keys):
     print >>out, "  </ItemGroup>"
 
 def print_filters(files, outname, root):
+    if files.file_fresh(outname): return
     out = open(outname, "w")
     dirs = {}
     for f in files.sec.items:
@@ -80,6 +83,7 @@ def print_filters(files, outname, root):
     print >>out, "</Project>"
 
 def print_project(files, outname, root, bintype, basename):
+    if files.file_fresh(outname): return
     out = open(outname, "w")
     print >>out, """<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
@@ -138,7 +142,7 @@ def print_project(files, outname, root, bintype, basename):
 </Project>"""
 
     
-def create_project(base, root, bintype):
+def create_project(root, base, bintype):
     files = FileList()
     predef = Macros()
     predef.add_macro("WIN32", "", Location("<command-line>", 0))
@@ -146,4 +150,4 @@ def create_project(base, root, bintype):
     print_filters(files, "%s.vcxproj.filters" % base, root)
     print_project(files, "%s.vcxproj" % base, root, bintype, base)
 
-create_project(sys.argv[3], sys.argv[1], sys.argv[2])
+create_project(sys.argv[1], sys.argv[2], sys.argv[3])
