@@ -401,7 +401,7 @@ class FileContext(PreprocessorSource):
     #================================================================================
     # ~~~~ Parser ~~~~~
     def parse_file(self, loc = None):
-        f = open(self.loc.fname) #on exception, pass it to IniReader
+        f = open(self.loc.fname, 'rU') #on exception, pass it to IniReader
 
         tokens = RunGrammar().Parse(f)
         program = {}
