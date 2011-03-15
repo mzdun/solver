@@ -77,23 +77,12 @@ print """all: $(OUT)/core.so $(OUT)/test
 
 clean:
 \t@if [ -e $(TMP) ]; then { echo 'RM $(TMP)'; $(RM) -r $(TMP); }; fi
+"""
 
-$(OUT_ROOT):
-\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi
+for d in ["$(OUT_ROOT):", "$(OUT): $(OUT_ROOT)", "$(TMP):", "$(CORE_TMP): $(TMP)", "$(TEST_TMP): $(TMP)"]:
+    print "%s\n\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi\n" % d
 
-$(OUT): $(OUT_ROOT)
-\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi
-
-$(TMP):
-\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi
-
-$(CORE_TMP): $(TMP)
-\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi
-
-$(TEST_TMP): $(TMP)
-\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi
-
-$(OUT)/core.so: $(CORE_TMP) $(CORE_OBJ) $(OUT)
+print """$(OUT)/core.so: $(CORE_TMP) $(CORE_OBJ) $(OUT)
 \t$(LINK) $(SO_FLAGS) $< $@
 
 $(OUT)/test: $(TEST_TMP) $(TEST_OBJ) $(OUT)
