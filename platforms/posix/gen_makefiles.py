@@ -8,7 +8,8 @@ from files import FileList
 
 root = "../../"
 defs=["HAVE_CONFIG_H", "HAVE_EXPAT_CONFIG_H", "XML_STATIC", "XML_UNICODE_WCHAR_T", "CURL_STATICLIB", "CURL_NO_OLDIES"]
-includes=["core/includes",
+includes=["core",
+          "core/includes",
           "3rd/curl/include/curl",
           "3rd/curl/include",
           "3rd/curl/lib",
@@ -16,62 +17,66 @@ includes=["core/includes",
           "3rd/libzlib/inc"]
 
 predef = Macros()
-predef.add_macro("UNIX", "", Location("<command-line>", 0))
+predef.add_macro("POSIX", "", Location("<command-line>", 0))
 predef.add_macro("EXTERNAL_OPENSSL", "", Location("<command-line>", 0))
-
-core = FileList()
-core.read(predef, "%splatforms/core.files" % root)
-test = FileList()
-test.read(predef, "%splatforms/test.files" % root)
-
-def get_objects(files, tmp_dir, flist):
-    out = []
-    for k in flist:
-        f = files.sec.items[k]
-        out.append("$(%s)/%s.o" % (tmp_dir, path.split(path.splitext(f.name)[0])[1]))
-    return out
-
-def print_object(name, tmp_dir, files):
-    print "%s= %s\n" % (name, """ \\
-\t""".join(
-    get_objects(files, tmp_dir, files.cfiles) +
-    get_objects(files, tmp_dir, files.cppfiles))
-                        )
-
-def print_compile(files, tmp_dir, flist):
-    for k in flist:
-        f = files.sec.items[k]
-        print "$(%s)/%s.o: %s%s Makefile.gen" % (tmp_dir, path.split(path.splitext(f.name)[0])[1], root, f.name)
-        if path.splitext(f.name)[1] == ".c":
-            print "\t@echo CC $<; $(COMPILE) -c -o $@ $<\n"
-        else:
-            print "\t@echo CC $<; $(COMPILE) -o $@ $<\n"
 
 def arglist(prefix, l):
     if len(l) == 0: return ""
     return "%s%s" % (prefix, (" %s" % prefix).join(l))
 
+class Project:
+    def __init__(self, name):
+        self.name = name
+        self.files = FileList()
+        self.out = name
+
+        self.files.read(predef, "%splatforms/%s.files" % (root, name))
+
+    def get_objects(self):
+        out = []
+        for k in self.files.cfiles + self.files.cppfiles:
+            f = self.files.sec.items[k]
+            out.append("$(%s_TMP)/%s.o" % (self.name.upper(), path.split(path.splitext(f.name)[0])[1]))
+        return out
+
+    def print_object(self):
+        print "%s_TMP = $(TMP)/%s" % (self.name.upper(), self.name)
+        print "%s_OBJ = %s\n" % (self.name.upper(), """ \\
+\t""".join(self.get_objects())
+                                )
+
+    def print_compile(self):
+        for k in self.files.cfiles + self.files.cppfiles:
+            f = self.files.sec.items[k]
+            print "$(%s_TMP)/%s.o: %s%s Makefile.gen" % (self.name.upper(), path.split(path.splitext(f.name)[0])[1], root, f.name)
+            if path.splitext(f.name)[1] == ".c":
+                print "\t@echo CC $<; $(COMPILE) -c -o $@ $<\n"
+            else:
+                print "\t@echo CC $<; $(COMPILE) -c -x c++ -o $@ $<\n"
+
+core = Project("core")
+test = Project("test")
+
 print """DEFS = %s""" % arglist("-D", defs)
 print """INCLUDES = %s""" % arglist("-I"+root, includes)
-print """CFLAGS=-g0 -O2 -Wno-system-headers
-CPPFLAGS=
-CC=gcc
+print """CFLAGS = -g0 -O2 -Wno-system-headers
+CPPFLAGS =
+CC = gcc
 COMPILE = $(CC) $(INCLUDES) $(CFLAGS) $(DEFS) $(CPPFLAGS)
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(CFLAGS) $(LDFLAGS) -o $@
-RM=rm
-RMDIR=rmdir
+RM = rm
+RMDIR = rmdir
 
-OUT_ROOT=%soutput
-OUT=$(OUT_ROOT)/nix
+OUT_ROOT = %soutput
+OUT = $(OUT_ROOT)/nix
 
-TMP=./int
-CORE_TMP=$(TMP)/core
-TEST_TMP=$(TMP)/test
+TMP = ./int
+
 """ % root
 
-print_object("CORE_OBJ", "CORE_TMP", core)
-print_object("TEST_OBJ", "TEST_TMP", test)
+core.print_object()
+test.print_object()
 
 print """all: $(OUT)/core.so $(OUT)/test
 
@@ -97,8 +102,5 @@ $(OUT)/test: $(TEST_TMP) $(TEST_OBJ) $(OUT)
 \t@$(COMPILE) -o $@ $<
 """
 
-print_compile(core, "CORE_TMP", core.cfiles)
-print_compile(core, "CORE_TMP", core.cppfiles)
-
-print_compile(test, "TEST_TMP", test.cfiles)
-print_compile(test, "TEST_TMP", test.cppfiles)
+core.print_compile()
+test.print_compile()
