@@ -29,13 +29,13 @@ class Project:
 
         self.files.read(predef, "%splatforms/%s.files" % (root, name))
 
-	def depends_on(self, project):
-		dep = project.get_link_dep()
-		if dep != "": self.depends.append(dep)
-		
-	def get_link_dep():
-		if self.bintype == kDynamicLibrary: return self.get_dest()
-		return ""
+    def depends_on(self, project):
+        dep = project.get_link_dep()
+        if dep != "": self.depends.append(dep)
+
+    def get_link_dep(self):
+        if self.bintype == kDynamicLibrary: return self.get_dest()
+        return ""
 
     def get_objects(self):
         out = []
@@ -77,6 +77,6 @@ class Project:
         if deps != "": deps = " " + deps
         print "%s: $(%s_TMP) $(%s_OBJ) $(OUT)%s" % (self.get_dest(), n, n, deps)
         if self.bintype == kApplication:
-            print "\t$(LINK) %s $(%s_OBJ) -o $@\n" % (libs, n)
+            print "\t$(LINK) %s%s $(%s_OBJ) -o $@\n" % (libs, deps, n)
         elif self.bintype == kDynamicLibrary:
             print "\t$(LINK) -shared %s%s $(%s_OBJ) -o $@\n" % (libs, deps, n)

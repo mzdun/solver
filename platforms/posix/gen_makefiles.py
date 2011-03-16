@@ -60,8 +60,6 @@ clean:
 for d in ["$(OUT_ROOT):", "$(OUT): $(OUT_ROOT)", "$(TMP):", "$(CORE_TMP): $(TMP)", "$(TEST_TMP): $(TMP)"]:
     print "%s\n\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi\n" % d
 
-print "$(OUT)/test.exe: $(OUT)/bookshelf.so\n"
-
 core.print_link()
 test.print_link()
 
