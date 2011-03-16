@@ -26,7 +26,7 @@ test.out = "bookshelf"
 
 test.depends_on(core)
 
-print """CFLAGS = -g0 -O2 -Wno-system-headers
+print """CFLAGS = -g3 -Wno-system-headers
 CPPFLAGS =
 
 CC = gcc
