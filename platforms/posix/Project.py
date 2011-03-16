@@ -20,7 +20,7 @@ class Project:
         self.out = name
         self.defs = defs
         self.libs = libs
-        self.includes = includes
+        self.includes = includes + ["/opt/local/include"]
         self.bintype = bintype
 
         self.files.read(predef, "%splatforms/%s.files" % (root, name))
@@ -35,7 +35,7 @@ class Project:
     def print_declaration(self):
         n = self.name.upper()
         print "%s_DEFS = %s" % (n, arglist("-D", self.defs))
-        print "%s_INCLUDES = %s" % (n, arglist("-I"+root, self.includes))
+        print "%s_INCLUDES = %s" % (n, arglist("-I", self.includes))
         print "%s_C_COMPILE = $(C_COMPILE) $(%s_INCLUDES) $(%s_CFLAGS) $(%s_DEFS)" % (n, n, n, n)
         print "%s_CPP_COMPILE = $(CPP_COMPILE) $(%s_INCLUDES) $(%s_CFLAGS) $(%s_CPPFLAGS) $(%s_DEFS)" % (n, n, n, n, n)
         print "%s_TMP = $(TMP)/%s" % (n, self.name)

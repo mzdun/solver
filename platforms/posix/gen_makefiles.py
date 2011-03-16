@@ -12,14 +12,14 @@ predef.add_macro("EXTERNAL_OPENSSL", "", Location("<command-line>", 0))
 core = Project("core",
                ["HAVE_CONFIG_H", "HAVE_EXPAT_CONFIG_H", "XML_STATIC", "XML_UNICODE_WCHAR_T", "CURL_STATICLIB", "CURL_NO_OLDIES", "VOGEL_EXPORTS", "USE_POSIX", "ZLIB", "L_ENDIAN"],
                ["c", "stdc++", "idn", "ldap", "crypto", "ssl", "ssh2", "dl", "pthread"],
-               ["core",
-                "core/includes",
-                "3rd/curl/lib",
-                "3rd/curl/include",
-                "3rd/curl/include/curl",
-                "3rd/libexpat/inc",
-                "3rd/libzlib/inc"], kDynamicLibrary, predef)
-test = Project("test", [], ["core"], ["core/includes"], kApplication, predef)
+               [root+"core",
+                root+"core/includes",
+                root+"3rd/curl/lib",
+                root+"3rd/curl/include",
+                root+"3rd/curl/include/curl",
+                root+"3rd/libexpat/inc",
+                root+"3rd/libzlib/inc"], kDynamicLibrary, predef)
+test = Project("test", [], ["core"], [root+"core/includes"], kApplication, predef)
 
 core.out = "bookshelf"
 
@@ -28,7 +28,7 @@ CPPFLAGS =
 
 CC = gcc
 LIBTOOL = g++
-LD_DIRS = -L/lib -L/usr/lib -L$(OUT)
+LD_DIRS = -L/lib -L/usr/lib -L/opt/local/lib -L$(OUT)
 
 C_COMPILE = $(CC) $(INCLUDES) $(CFLAGS) $(DEFS) -x c
 CPP_COMPILE = $(CC) $(INCLUDES) $(CFLAGS) $(CPPFLAGS) $(DEFS) -x c++
