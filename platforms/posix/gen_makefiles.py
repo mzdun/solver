@@ -30,7 +30,7 @@ CC = gcc
 LIBTOOL = g++
 LD_DIRS = -L/lib -L/usr/lib -L/opt/local/lib -L$(OUT)
 
-C_COMPILE = $(CC) $(INCLUDES) $(CFLAGS) $(DEFS) -x c
+C_COMPILE = gcc $(INCLUDES) $(CFLAGS) $(DEFS) -x c
 CPP_COMPILE = $(CC) $(INCLUDES) $(CFLAGS) $(CPPFLAGS) $(DEFS) -x c++
 
 CCLD = $(CC)

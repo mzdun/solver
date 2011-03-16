@@ -46,7 +46,7 @@ class Project:
         n = self.name.upper()
         for k in self.files.cfiles + self.files.cppfiles:
             f = self.files.sec.items[k]
-            print "$(%s_TMP)/%s.o: %s%s" % (self.name.upper(), path.split(path.splitext(f.name)[0])[1], root, f.name)
+            print "$(%s_TMP)/%s.o: %s%s #$(%s_TMP)" % (self.name.upper(), path.split(path.splitext(f.name)[0])[1], root, f.name, self.name.upper())
             if path.splitext(f.name)[1] == ".c":
                 print "\t@echo CC $<; $(%s_C_COMPILE) -c -o $@ $<\n" % n
             else:
