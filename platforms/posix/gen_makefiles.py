@@ -10,7 +10,7 @@ predef.add_macro("USE_POSIX", "", Location("<command-line>", 0))
 predef.add_macro("EXTERNAL_OPENSSL", "", Location("<command-line>", 0))
 
 core = Project("core",
-               ["HAVE_CONFIG_H", "HAVE_EXPAT_CONFIG_H", "XML_STATIC", "XML_UNICODE_WCHAR_T", "CURL_STATICLIB", "CURL_NO_OLDIES", "VOGEL_EXPORTS", "USE_POSIX", "ZLIB", "L_ENDIAN"],
+               ["HAVE_CONFIG_H", "HAVE_EXPAT_CONFIG_H", "XML_STATIC", "CURL_STATICLIB", "CURL_NO_OLDIES", "VOGEL_EXPORTS", "USE_POSIX", "ZLIB", "L_ENDIAN"],
                ["c", "stdc++", "idn", "ldap", "crypto", "ssl", "ssh2", "dl", "pthread"],
                [root+"core",
                 root+"core/includes",
