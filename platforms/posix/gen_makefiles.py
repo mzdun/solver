@@ -19,9 +19,12 @@ core = Project("core",
                 root+"3rd/curl/include/curl",
                 root+"3rd/libexpat/inc",
                 root+"3rd/libzlib/inc"], kDynamicLibrary, predef)
-test = Project("test", [], ["core"], [root+"core/includes"], kApplication, predef)
+test = Project("test", [], [], [root+"core/includes"], kApplication, predef)
 
 core.out = "bookshelf"
+test.out = "bookshelf"
+
+test.depends_on(core)
 
 print """CFLAGS = -g0 -O2 -Wno-system-headers
 CPPFLAGS =
@@ -48,11 +51,11 @@ TMP = ./int
 core.print_declaration()
 test.print_declaration()
 
-print """all: $(OUT)/bookshelf.so $(OUT)/test.exe
+print """all: %s %s
 
 clean:
 \t@if [ -e $(TMP) ]; then { echo 'RM $(TMP)'; $(RM) -r $(TMP); }; fi
-"""
+""" % (core.get_dest(), test.get_dest())
 
 for d in ["$(OUT_ROOT):", "$(OUT): $(OUT_ROOT)", "$(TMP):", "$(CORE_TMP): $(TMP)", "$(TEST_TMP): $(TMP)"]:
     print "%s\n\t@if ! [ -e $@ ]; then { echo 'mkdir $@'; mkdir $@; }; fi\n" % d

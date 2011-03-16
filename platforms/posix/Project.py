@@ -6,6 +6,9 @@ from files import FileList
 
 root = "../../"
 
+so_ext=".dylib"
+app_ext=""
+
 kApplication = 0
 kDynamicLibrary = 1
 
@@ -22,8 +25,17 @@ class Project:
         self.libs = libs
         self.includes = includes + ["/opt/local/include"]
         self.bintype = bintype
+        self.depends = []
 
         self.files.read(predef, "%splatforms/%s.files" % (root, name))
+
+	def depends_on(self, project):
+		dep = project.get_link_dep()
+		if dep != "": self.depends.append(dep)
+		
+	def get_link_dep():
+		if self.bintype == kDynamicLibrary: return self.get_dest()
+		return ""
 
     def get_objects(self):
         out = []
@@ -31,6 +43,12 @@ class Project:
             f = self.files.sec.items[k]
             out.append("$(%s_TMP)/%s.o" % (self.name.upper(), path.split(path.splitext(f.name)[0])[1]))
         return out
+
+    def get_dest(self):
+        if self.bintype == kApplication:
+            return "$(OUT)/%s%s" % (self.out, app_ext)
+        elif self.bintype == kDynamicLibrary:
+            return "$(OUT)/%s%s" % (self.out, so_ext)
 
     def print_declaration(self):
         n = self.name.upper()
@@ -55,7 +73,10 @@ class Project:
     def print_link(self):
         n = self.name.upper()
         libs = arglist("-l", self.libs)
+        deps = arglist("", self.depends)
+        if deps != "": deps = " " + deps
+        print "%s: $(%s_TMP) $(%s_OBJ) $(OUT)%s" % (self.get_dest(), n, n, deps)
         if self.bintype == kApplication:
-            print """$(OUT)/%s.exe: $(%s_TMP) $(%s_OBJ) $(OUT)\n\t$(LINK) %s $(%s_OBJ) -o $@\n""" % (self.out, n, n, libs, n)
+            print "\t$(LINK) %s $(%s_OBJ) -o $@\n" % (libs, n)
         elif self.bintype == kDynamicLibrary:
-            print """$(OUT)/%s.so: $(%s_TMP) $(%s_OBJ) $(OUT)\n\t$(LINK) -shared %s $(%s_OBJ) -o $@\n""" % (self.out, n, n, libs, n)
+            print "\t$(LINK) -shared %s%s $(%s_OBJ) -o $@\n" % (libs, deps, n)
