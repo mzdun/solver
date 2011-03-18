@@ -34,7 +34,7 @@ class Project:
         if dep != "": self.depends.append(dep)
 
     def get_link_dep(self):
-        if self.bintype == kDynamicLibrary: return self.get_dest()
+        if self.bintype == kDynamicLibrary: return self.get_short_dest()
         return ""
 
     def get_objects(self):
@@ -45,10 +45,13 @@ class Project:
         return out
 
     def get_dest(self):
+        return "$(OUT)/"+self.get_short_dest()
+
+    def get_short_dest(self):
         if self.bintype == kApplication:
-            return "$(OUT)/%s%s" % (self.out, app_ext)
+            return "%s%s" % (self.out, app_ext)
         elif self.bintype == kDynamicLibrary:
-            return "$(OUT)/%s%s" % (self.out, so_ext)
+            return "%s%s" % (self.out, so_ext)
 
     def print_declaration(self):
         n = self.name.upper()
@@ -75,8 +78,10 @@ class Project:
         libs = arglist("-l", self.libs)
         deps = arglist("", self.depends)
         if deps != "": deps = " " + deps
-        print "%s: $(%s_TMP) $(%s_OBJ) $(OUT)%s Makefile.gen" % (self.get_dest(), n, n, deps)
+        deps2 = arglist("$(OUT)/", self.depends)
+        if deps2 != "": deps2 = " " + deps2
+        print "%s: $(%s_TMP) $(%s_OBJ) $(OUT)%s Makefile.gen" % (self.get_dest(), n, n, deps2)
         if self.bintype == kApplication:
-            print "\t$(LINK) %s%s $(%s_OBJ) -o $@\n" % (libs, deps, n)
+            print "\t$(LINK) %s%s $(%s_OBJ) -o %s%s\n\tcp %s%s $@\n" % (libs, deps, n, self.out, app_ext, self.out, app_ext)
         elif self.bintype == kDynamicLibrary:
-            print "\t$(LINK) -shared %s%s $(%s_OBJ) -o $@\n" % (libs, deps, n)
+            print "\t$(LINK) -shared %s%s $(%s_OBJ) -o %s%s\n\tcp %s%s $@\n" % (libs, deps, n, self.out, so_ext, self.out, so_ext)

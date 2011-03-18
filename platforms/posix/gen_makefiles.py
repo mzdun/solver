@@ -29,7 +29,7 @@ CPPFLAGS =
 
 CC = gcc
 LIBTOOL = g++
-LD_DIRS = -L/usr/lib -L/opt/local/lib -L$(OUT)
+LD_DIRS = -L/opt/local/lib -L$(OUT) -L/usr/lib
 
 C_COMPILE = gcc $(INCLUDES) $(CFLAGS) $(DEFS) -x c
 CPP_COMPILE = $(CC) $(INCLUDES) $(CFLAGS) $(CPPFLAGS) $(DEFS) -x c++
