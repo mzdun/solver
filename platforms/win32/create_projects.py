@@ -64,20 +64,22 @@ def print_file(out, files, name, root, keys):
             mask = 0
             for b in vhash["exclude"]:
                 c, p = b.split("|")
-                if c == "*": mask = mask | 0x3
+                if c == "*": mask = mask | 0x7
                 if p == "*": mask = mask | 0x30
 
                 if c == "Debug": mask = mask | 0x1
-                if c == "Release": mask = mask | 0x2
+                if c == "Release": mask = mask | 0x6 #also always excluding PGOs
+                if c == "PGO Release": mask = mask | 0x4
                 if p == "Win32": mask = mask | 0x10
                 if p == "x64": mask = mask | 0x20
-            if mask == 0x33: settings.append("<ExcludedFromBuild>true</ExcludedFromBuild>")
-            elif mask & 0xF == 0x3:
+            if mask == 0x37: settings.append("<ExcludedFromBuild>true</ExcludedFromBuild>")
+            elif mask & 0xF == 0x7:
                 if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Platform)'=='Win32'\">true</ExcludedFromBuild>")
                 if mask & 0xF0 == 0x20: settings.append("<ExcludedFromBuild Condition=\"'$(Platform)'=='x64'\">true</ExcludedFromBuild>")
             elif mask & 0xF0 == 0x30:
                 if mask & 0xF == 0x1: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)'=='Debug'\">true</ExcludedFromBuild>")
                 if mask & 0xF == 0x2: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)'=='Release'\">true</ExcludedFromBuild>")
+                if mask & 0xF == 0x4: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)'=='PGO Release'\">true</ExcludedFromBuild>")
             else:
                 if mask & 0xF == 0x1:
                     if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Debug|Win32'\">true</ExcludedFromBuild>")
@@ -85,6 +87,9 @@ def print_file(out, files, name, root, keys):
                 if mask & 0xF == 0x2:
                     if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Release|Win32'\">true</ExcludedFromBuild>")
                     if mask & 0xF0 == 0x20: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='Release|x64'\">true</ExcludedFromBuild>")
+                if mask & 0xF == 0x4:
+                    if mask & 0xF0 == 0x10: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='PGO Release|Win32'\">true</ExcludedFromBuild>")
+                    if mask & 0xF0 == 0x20: settings.append("<ExcludedFromBuild Condition=\"'$(Configuration)|$(Platform)'=='PGO Release|x64'\">true</ExcludedFromBuild>")
         p = _p
 
         if len(settings) == 0: print >>out, """    <%s Include="%s" />""" % (n, p)
@@ -159,6 +164,14 @@ def print_project(files, outname, root, bintype, basename, guid):
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="PGO Release|Win32">
+      <Configuration>PGO Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="PGO Release|x64">
+      <Configuration>PGO Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{%s}</ProjectGuid>
@@ -177,17 +190,24 @@ def print_project(files, outname, root, bintype, basename, guid):
     <UseDebugLibraries>false</UseDebugLibraries>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)'=='PGO Release'" Label="Configuration">
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <WholeProgramOptimization>PGInstrument</WholeProgramOptimization>
+  </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
   </ImportGroup>
   <ImportGroup Label="PropertySheets">
     <Import Project="$(SolutionDir)\Solver.props" Condition="exists('$(SolutionDir)\Solver.props')" />
-    <Import Project="$(SolutionDir)\Solver.%s.props" Condition="exists('$(SolutionDir)\Solver.%s.props')" />
     <Import Project="$(SolutionDir)\Solver.$(Platform).props" Condition="exists('$(SolutionDir)\Solver.$(Platform).props')" />
     <Import Project="$(SolutionDir)\Solver.$(Configuration).props" Condition="exists('$(SolutionDir)\Solver.$(Configuration).props')" />
     <Import Project="$(SolutionDir)\Solver.$(Platform).$(Configuration).props" Condition="exists('$(SolutionDir)\Solver.$(Platform).$(Configuration).props')" />
+    <Import Project="$(SolutionDir)\Solver.%s.props" Condition="exists('$(SolutionDir)\Solver.%s.props')" />
+    <Import Project="$(SolutionDir)\Solver.%s.$(Platform).props" Condition="exists('$(SolutionDir)\Solver.%s.$(Platform).props')" />
+    <Import Project="$(SolutionDir)\Solver.%s.$(Configuration).props" Condition="exists('$(SolutionDir)\Solver.%s.$(Configuration).props')" />
+    <Import Project="$(SolutionDir)\Solver.%s.$(Platform).$(Configuration).props" Condition="exists('$(SolutionDir)\Solver.%s.$(Platform).$(Configuration).props')" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />""" % (guid, basename, bintype, basename, basename)
+  <PropertyGroup Label="UserMacros" />""" % (guid, basename, bintype, basename, basename, basename, basename, basename, basename, basename, basename)
     print_file(out, files, "None", root, files.datafiles)
     print_file(out, files, "ClCompile", root, files.cfiles + files.cppfiles)
     print_file(out, files, "ClInclude", root, files.includes)
